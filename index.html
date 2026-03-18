@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resultados Oscars🏆</title>
+    <title>Resultados Oscars 🏆</title>
     <style>
         :root { --gold: #D4AF37; --dark: #0a0a0a; --glass: rgba(255,255,255,0.05); }
         body { background: var(--dark); color: white; font-family: 'Georgia', serif; padding: 20px; text-align: center; }
         .container { max-width: 600px; margin: 0 auto; background: var(--glass); padding: 30px; border-radius: 20px; border: 1px solid var(--gold); }
         h1 { color: var(--gold); letter-spacing: 3px; text-transform: uppercase; }
-        
         table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 1.2rem; }
         th { border-bottom: 2px solid var(--gold); padding: 15px; color: var(--gold); text-transform: uppercase; }
         td { padding: 15px; border-bottom: 1px solid #333; }
@@ -22,7 +21,7 @@
 
 <div class="container">
     <h1>🏆 Tabla de Posiciones Final</h1>
-    <p style="color: #999;">Resultados</p>
+    <p style="color: #999;">Resultados Oficiales</p>
     
     <div id="loading" class="loading">Calculando votos...</div>
     
@@ -39,42 +38,10 @@
 </div>
 
 <script>
-    // 1. URL DE TU EXCEL (Publicar como CSV)
+    // 1. URL DE TU EXCEL (Verifica que termine en output=csv)
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhTN5cI2dGymnpFhGpvuPCwdDavJkJEG4u44ox5qKddNjIOHUYm2VioQILnudoQey1jK3Iu6RNXucX/pub?output=csv";
 
-    // 2. GANADORES REALES
-    const ganadoresOficiales = [
-        "One Battle After Another",           // Mejor Película
-        "Jessie Buckley - Hamnet",            // Mejor Actriz
-        "Michael B. Jordan - Sinners",        // Mejor Actor
-        "Amy Madigan - Weapons",              // Mejor Actriz Reparto
-        "Sean Penn - One Battle After Another", // Mejor Actor Reparto
-        "Paul Thomas Anderson - One Battle After Another", // Mejor Dirección
-        "Sinners",                            // Guion Original
-        "One Battle After Another",           // Guion Adaptado
-        "Golden - KPop Demon Hunters",        // Canción
-        "Sinners",                            // Banda Sonora
-        "Sentimental Value (Noruega)",        // Película Internacional
-        "KPop Demon Hunters",                 // Animación
-        "Mr. Nobody Against Putin",           // Documental
-        "Frankenstein",                       // Diseño Producción
-        "Frankenstein",                       // Maquillaje
-        "Frankenstein",                       // Vestuario
-        "F1",                                 // Sonido
-        "One Battle After Another",           // Edición
-        "Sinners",                            // Fotografía
-        "Avatar: Fire and Ash",               // Efectos Visuales
-        ["The Singers", "Two People Exchanging Saliva"], // Corto Ficción
-        "All the Empty Rooms",                // Corto Doc
-        "One Battle After Another",           // Casting
-        "The Girl Who Cried Pearls"           // Corto Animado
-    ];
-
-<script>
-    // 1. VERIFICA QUE ESTA URL TERMINE EN output=csv
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhTN5cI2dGymnpFhGpvuPCwdDavJkJEG4u44ox5qKddNjIOHUYm2VioQILnudoQey1jK3Iu6RNXucX/pub?output=csv";
-
-    // 2. GANADORES (Ajustados exactamente a lo que se ve en tu foto del Excel)
+    // 2. GANADORES (Ajustados exactamente a tu Excel)
     const ganadoresOficiales = [
         "One Battle After Another",           // Mejor Película
         "Jessie Buckley - Hamnet",            // Mejor Actriz
@@ -107,18 +74,17 @@
             const response = await fetch(CSV_URL + "&cb=" + Date.now());
             const csvText = await response.text();
             
-            // Dividimos por filas y limpiamos espacios vacíos al final
+            // Dividimos por filas y quitamos las vacías
             const filas = csvText.split(/\r?\n/).filter(f => f.trim() !== "").slice(1);
             
             let participantes = [];
 
             filas.forEach(fila => {
-                // Esta expresión regular separa por comas respetando las que están dentro de comillas
+                // Separa por comas respetando las que están dentro de comillas
                 const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                 
                 if (columnas.length < 3) return;
 
-                // Limpiamos comillas y espacios de cada celda
                 const limpiar = (texto) => texto ? texto.replace(/^["']|["']$/g, '').trim() : "";
                 
                 const nombre = limpiar(columnas[1]);
@@ -126,12 +92,11 @@
 
                 ganadoresOficiales.forEach((ganador, i) => {
                     const votoUsuario = limpiar(columnas[i + 2]);
+                    if (!votoUsuario) return;
                     
                     if (Array.isArray(ganador)) {
-                        // Caso de empate (Corto Ficción)
                         if (ganador.some(g => g.toLowerCase() === votoUsuario.toLowerCase())) aciertos++;
                     } else {
-                        // Comparación normal (sin importar mayúsculas/minúsculas)
                         if (votoUsuario.toLowerCase() === ganador.toLowerCase()) aciertos++;
                     }
                 });
@@ -139,7 +104,7 @@
                 participantes.push({ nombre, aciertos });
             });
 
-            // Ordenamos: primero por aciertos, luego por nombre
+            // Ordenar por puntaje
             participantes.sort((a, b) => b.aciertos - a.aciertos);
 
             const body = document.getElementById('body-resultados');
@@ -160,7 +125,7 @@
 
         } catch (error) {
             console.error(error);
-            document.getElementById('loading').innerText = "Error: Verifica que el Excel esté publicado como CSV.";
+            document.getElementById('loading').innerText = "Error: Verifica la publicación del Excel.";
         }
     }
 
