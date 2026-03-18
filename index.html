@@ -3,129 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oscars 2026🎬</title>
+    <title>Resultados Oscars🏆</title>
     <style>
-        :root { --gold: #D4AF37; --dark: #05070a; --red: #8b0000; --glass: rgba(255,255,255,0.05); }
-        body { background: var(--dark); color: white; font-family: 'Georgia', serif; margin: 0; padding: 20px; line-height: 1.6; }
-        .container { max-width: 850px; margin: 0 auto; background: rgba(255,255,255,0.02); padding: 30px; border-radius: 20px; border: 1px solid #222; box-shadow: 0 0 40px rgba(0,0,0,1); }
-        header { text-align: center; border-bottom: 2px solid var(--gold); padding-bottom: 20px; margin-bottom: 40px; }
-        h1 { color: var(--gold); letter-spacing: 5px; text-transform: uppercase; margin: 0; font-size: 2.2rem; }
+        :root { --gold: #D4AF37; --dark: #0a0a0a; --glass: rgba(255,255,255,0.05); }
+        body { background: var(--dark); color: white; font-family: 'Georgia', serif; padding: 20px; text-align: center; }
+        .container { max-width: 600px; margin: 0 auto; background: var(--glass); padding: 30px; border-radius: 20px; border: 1px solid var(--gold); }
+        h1 { color: var(--gold); letter-spacing: 3px; text-transform: uppercase; }
         
-        .categoria-card { background: var(--glass); border: 1px solid #333; border-radius: 15px; padding: 25px; margin-bottom: 30px; }
-        .categoria-titulo { color: var(--gold); font-size: 1.2rem; margin-bottom: 20px; border-left: 5px solid var(--red); padding-left: 15px; text-transform: uppercase; font-weight: bold; }
-        
-        .nominados-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
-        .btn-nominado { background: #111; border: 1px solid #444; color: #ccc; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: 0.3s; font-size: 0.95rem; }
-        .btn-nominado:hover { background: rgba(212, 175, 55, 0.1); border-color: var(--gold); }
-        .selected { background: var(--gold) !important; color: black !important; font-weight: bold; border-color: white !important; }
-
-        .input-group { text-align: center; margin-bottom: 40px; }
-        input[type="text"] { width: 80%; padding: 15px; background: #000; border: 1px solid var(--gold); color: white; border-radius: 10px; font-size: 1.1rem; text-align: center; }
-        
-        .btn-enviar { width: 100%; background: var(--red); color: white; border: none; padding: 22px; border-radius: 12px; font-size: 1.3rem; cursor: pointer; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
-        .btn-enviar:disabled { background: #444; cursor: not-allowed; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 1.2rem; }
+        th { border-bottom: 2px solid var(--gold); padding: 15px; color: var(--gold); text-transform: uppercase; }
+        td { padding: 15px; border-bottom: 1px solid #333; }
+        .pos-1 { color: var(--gold); font-weight: bold; font-size: 1.5rem; }
+        .puntos { font-weight: bold; color: #fff; }
+        .loading { color: var(--gold); font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <header>
-        <h1>THE OSCARS 2026</h1>
-        <p style="color: #999; letter-spacing: 2px;">VOTACIÓN OFICIAL</p>
-    </header>
-
-    <div class="input-group">
-        <input type="text" id="nombre-usuario" placeholder="ESCRIBE TU NOMBRE AQUÍ">
-    </div>
+    <h1>🏆 Tabla de Posiciones Final</h1>
+    <p style="color: #999;">Resultados</p>
     
-    <div id="quiniela-dinamica"></div>
-
-    <button class="btn-enviar" id="btn-submit" onclick="enviarVotos()">Enviar Pronósticos</button>
+    <div id="loading" class="loading">Calculando votos...</div>
+    
+    <table id="tabla-resultados" style="display:none;">
+        <thead>
+            <tr>
+                <th>Lugar</th>
+                <th>Nombre</th>
+                <th>Aciertos</th>
+            </tr>
+        </thead>
+        <tbody id="body-resultados"></tbody>
+    </table>
 </div>
 
 <script>
-    // --- PEGA TU URL DE APPS SCRIPT AQUÍ ---
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKc8nb0_fPvu2qp-cS2DxFeMPWJH9UIaO-eMTuC4PT0jo4TfB4ljfW-UmqzWYqZUMh/exec";
+    // 1. URL DE TU EXCEL (Publicar como CSV)
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhTN5cI2dGymnpFhGpvuPCwdDavJkJEG4u44ox5qKddNjIOHUYm2VioQILnudoQey1jK3Iu6RNXucX/pub?output=csv";
 
-    const categorias = [
-        { id: "c1", titulo: "Mejor Película", nominados: ["Bugonia", "F1", "Frankenstein", "Hamnet", "Marty Supreme", "One Battle After Another", "O Agente Secreto", "Sentimental Value", "Sinners", "Train Dreams"] },
-        { id: "c2", titulo: "Mejor Actriz Protagonista", nominados: ["Jessie Buckley - Hamnet", "Rose Byrne - If I Had Legs I'd Kick You", "Kate Hudson - Song Sung Blue", "Renate Reinsve - Sentimental Value", "Emma Stone - Bugonia"] },
-        { id: "c3", titulo: "Mejor Actor Protagonista", nominados: ["Timothée Chalamet - Marty Supreme", "Leonardo DiCaprio - One Battle After Another", "Ethan Hawke - Blue Moon", "Michael B. Jordan - Sinners", "Wagner Moura - O Agente Secreto"] },
-        { id: "c4", titulo: "Mejor Actriz de Reparto", nominados: ["Elle Fanning - Sentimental Value", "Inga Ibsdotter Lilleaas - Sentimental Value", "Amy Madigan - Weapons", "Wunmi Mosaku - Sinners", "Teyana Taylor - One Battle After Another"] },
-        { id: "c5", titulo: "Mejor Actor de Reparto", nominados: ["Benicio del Toro - One Battle After Another", "Jacob Elordi - Frankenstein", "Delroy Lindo - Sinners", "Sean Penn - One Battle After Another", "Stellan Skarsgård - Sentimental Value"] },
-        { id: "c6", titulo: "Mejor Dirección", nominados: ["Chloé Zhao - Hamnet", "Josh Safdie - Marty Supreme", "Paul Thomas Anderson - One Battle After Another", "Joachim Trier - Sentimental Value", "Ryan Coogler - Sinners"] },
-        { id: "c7", titulo: "Mejor Guion Original", nominados: ["Blue Moon", "It Was Just an Accident", "Marty Supreme", "Sentimental Value", "Sinners"] },
-        { id: "c8", titulo: "Mejor Guion Adaptado", nominados: ["Bugonia", "Frankenstein", "Hamnet", "One Battle After Another", "Train Dreams"] },
-        { id: "c9", titulo: "Mejor Canción Original", nominados: ["Dear Me - Relentless", "Golden - KPop Demon Hunters", "I Lied to You - Sinners", "Sweet Dreams of Joy - Viva Verdi", "Train Dreams - Train Dreams"] },
-        { id: "c10", titulo: "Mejor Banda Sonora Original", nominados: ["Bugonia", "Frankenstein", "Hamnet", "One Battle After Another", "Sinners"] },
-        { id: "c11", titulo: "Mejor Película Internacional", nominados: ["O Agente Secreto (Brasil)", "It Was Just an Accident (Francia)", "Sentimental Value (Noruega)", "Sirat: Trance en el desierto (España)", "The Voice of Hind Rajab (Túnez)"] },
-        { id: "c12", titulo: "Mejor Película de Animación", nominados: ["Arco", "Elio", "KPop Demon Hunters", "Little Amélie or the Character of Rain", "Zootopia 2"] },
-        { id: "c13", titulo: "Mejor Película Documental", nominados: ["The Alabama Solution", "Come See Me in the Good Light", "Cutting Through Rocks", "Mr. Nobody Against Putin", "The Perfect Neighbor"] },
-        { id: "c14", titulo: "Mejor Diseño de Producción", nominados: ["Frankenstein", "Hamnet", "Marty Supreme", "One Battle After Another", "Sinners"] },
-        { id: "c15", titulo: "Mejor Maquillaje y Peluquería", nominados: ["Frankenstein", "Kokuho", "Sinners", "The Smashing Machine", "The Ugly Stepsister"] },
-        { id: "c16", titulo: "Mejor Diseño de Vestuario", nominados: ["Avatar: Fire and Ash", "Frankenstein", "Hamnet", "Marty Supreme", "Sinners"] },
-        { id: "c17", titulo: "Mejor Sonido", nominados: ["F1", "Frankenstein", "One Battle After Another", "Sinners", "Sirāt: trance en el desierto"] },
-        { id: "c18", titulo: "Mejor Edición", nominados: ["F1", "Marty Supreme", "One Battle After Another", "Sentimental Value", "Sinners"] },
-        { id: "c19", titulo: "Mejor Fotografía", nominados: ["Frankenstein", "Marty Supreme", "One Battle After Another", "Sinners", "Train Dreams"] },
-        { id: "c20", titulo: "Mejores Efectos Visuales", nominados: ["Avatar: Fire and Ash", "F1", "Jurassic World Rebirth", "The Lost Bus", "Sinners"] },
-        { id: "c21", titulo: "Mejor Cortometraje de Ficción", nominados: ["Butcher's Stain", "A Friend of Dorothy", "Jane Austen's Period Drama", "The Singers", "Two People Exchanging Saliva"] },
-        { id: "c22", titulo: "Mejor Cortometraje Documental", nominados: ["All the Empty Rooms", "Armed Only With a Camera", "Children No More", "The Devil Is Busy", "Perfectly a Strangeness"] },
-        { id: "c23", titulo: "Mejor Casting", nominados: ["Hamnet", "Marty Supreme", "O Agente Secreto", "One Battle After Another", "Sinners"] },
-        { id: "c24", titulo: "Mejor Cortometraje Animado", nominados: ["Butterfly", "Forevergreen", "The Girl Who Cried Pearls", "Retirement Plan", "The Three Sisters"] }
+    // 2. GANADORES REALES
+    const ganadoresOficiales = [
+        "One Battle After Another",           // Mejor Película
+        "Jessie Buckley - Hamnet",            // Mejor Actriz
+        "Michael B. Jordan - Sinners",        // Mejor Actor
+        "Amy Madigan - Weapons",              // Mejor Actriz Reparto
+        "Sean Penn - One Battle After Another", // Mejor Actor Reparto
+        "Paul Thomas Anderson - One Battle After Another", // Mejor Dirección
+        "Sinners",                            // Guion Original
+        "One Battle After Another",           // Guion Adaptado
+        "Golden - KPop Demon Hunters",        // Canción
+        "Sinners",                            // Banda Sonora
+        "Sentimental Value (Noruega)",        // Película Internacional
+        "KPop Demon Hunters",                 // Animación
+        "Mr. Nobody Against Putin",           // Documental
+        "Frankenstein",                       // Diseño Producción
+        "Frankenstein",                       // Maquillaje
+        "Frankenstein",                       // Vestuario
+        "F1",                                 // Sonido
+        "One Battle After Another",           // Edición
+        "Sinners",                            // Fotografía
+        "Avatar: Fire and Ash",               // Efectos Visuales
+        ["The Singers", "Two People Exchanging Saliva"], // Corto Ficción (EMPATE)
+        "All the Empty Rooms",                // Corto Doc
+        "One Battle After Another",           // Casting
+        "The Girl Who Cried Pearls"           // Corto Animado
     ];
 
-    let misVotos = {};
-
-    function renderQuiniela() {
-        const contenedor = document.getElementById('quiniela-dinamica');
-        categorias.forEach(cat => {
-            let html = `
-                <div class="categoria-card">
-                    <div class="categoria-titulo">${cat.titulo}</div>
-                    <div class="nominados-grid">
-                        ${cat.nominados.map(nom => `
-                            <button class="btn-nominado" onclick="seleccionar('${cat.id}', '${nom}', this)">
-                                ${nom}
-                            </button>
-                        `).join('')}
-                    </div>
-                </div>`;
-            contenedor.innerHTML += html;
-        });
-    }
-
-    function seleccionar(catId, nominado, el) {
-        misVotos[catId] = nominado;
-        const botones = el.parentElement.querySelectorAll('.btn-nominado');
-        botones.forEach(b => b.classList.remove('selected'));
-        el.classList.add('selected');
-    }
-
-    async function enviarVotos() {
-        const nombre = document.getElementById('nombre-usuario').value.trim();
-        const numVotos = Object.keys(misVotos).length;
-
-        if(!nombre) return alert("Ingresa tu nombre para la alfombra roja.");
-        if(numVotos < categorias.length) return alert(`¡Te faltan ${categorias.length - numVotos} categorías!`);
-
-        document.getElementById('btn-submit').disabled = true;
-
-        const payload = {
-            nombre: nombre,
-            votos: categorias.map(c => misVotos[c.id])
-        };
-
+    async function procesarResultados() {
         try {
-            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-            alert("¡Tus votos han llegado a la Academia!");
-            location.reload();
-        } catch(e) { 
-            alert("Error al enviar."); 
-            document.getElementById('btn-submit').disabled = false;
+            const response = await fetch(CSV_URL + "?cb=" + Date.now());
+            const data = await response.text();
+            const filas = data.split('\n').slice(1);
+            
+            let participantes = [];
+
+            filas.forEach(fila => {
+                const columnas = fila.split(',');
+                if (columnas.length < 5) return;
+
+                const nombre = columnas[1].trim();
+                let aciertos = 0;
+
+                ganadoresOficiales.forEach((ganador, i) => {
+                    const votoUsuario = columnas[i + 2] ? columnas[i + 2].trim() : "";
+                    
+                    // Lógica para manejar el empate en Corto Ficción o aciertos normales
+                    if (Array.isArray(ganador)) {
+                        if (ganador.includes(votoUsuario)) aciertos++;
+                    } else {
+                        if (votoUsuario === ganador) aciertos++;
+                    }
+                });
+
+                participantes.push({ nombre, aciertos });
+            });
+
+            participantes.sort((a, b) => b.aciertos - a.aciertos);
+
+            const body = document.getElementById('body-resultados');
+            body.innerHTML = "";
+            participantes.forEach((p, index) => {
+                const esGanador = index === 0 ? "pos-1" : "";
+                body.innerHTML += `
+                    <tr class="${esGanador}">
+                        <td>${index + 1}°</td>
+                        <td>${p.nombre}</td>
+                        <td class="puntos">${p.aciertos}</td>
+                    </tr>`;
+            });
+
+            document.getElementById('loading').style.display = "none";
+            document.getElementById('tabla-resultados').style.display = "table";
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById('loading').innerText = "Error al cargar datos.";
         }
     }
 
-    renderQuiniela();
+    procesarResultados();
 </script>
 </body>
 </html>
