@@ -69,65 +69,75 @@
         "The Girl Who Cried Pearls"           // Corto Animado
     ];
 
-    async function procesarResultados() {
-        try {
-            const response = await fetch(CSV_URL + "&cb=" + Date.now());
-            const csvText = await response.text();
-            
-            // Dividimos por filas y quitamos las vacías
-            const filas = csvText.split(/\r?\n/).filter(f => f.trim() !== "").slice(1);
-            
-            let participantes = [];
+async function procesarResultados() {
+    try {
+        const response = await fetch(CSV_URL + "&cb=" + Date.now());
+        const csvText = await response.text();
+        
+        // Dividimos por filas y limpiamos
+        const filas = csvText.split(/\r?\n/).filter(f => f.trim() !== "").slice(1);
+        
+        let participantes = [];
 
-            filas.forEach(fila => {
-                // Separa por comas respetando las que están dentro de comillas
-                const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                
-                if (columnas.length < 3) return;
+        filas.forEach(fila => {
+            // Separador robusto para CSV
+            const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            if (columnas.length < 5) return;
 
-                const limpiar = (texto) => texto ? texto.replace(/^["']|["']$/g, '').trim() : "";
-                
-                const nombre = limpiar(columnas[1]);
-                let aciertos = 0;
+            const limpiar = (texto) => texto ? texto.replace(/^["']|["']$/g, '').trim() : "";
+            const nombre = limpiar(columnas[1]);
+            let aciertos = 0;
 
-                ganadoresOficiales.forEach((ganador, i) => {
-                    const votoUsuario = limpiar(columnas[i + 2]);
-                    if (!votoUsuario) return;
+            ganadoresOficiales.forEach((ganador, i) => {
+                const votoUsuario = limpiar(columnas[i + 2]);
+                if (!votoUsuario) return;
+
+                // Lógica especial para el EMPATE (donde el ganador es una lista/array)
+                if (Array.isArray(ganador)) {
+                    // Si el voto del usuario coincide con CUALQUIERA de los ganadores de la lista
+                    const coincideEmpate = ganador.some(g => 
+                        votoUsuario.toLowerCase().includes(g.toLowerCase()) || 
+                        g.toLowerCase().includes(votoUsuario.toLowerCase())
+                    );
                     
-                    if (Array.isArray(ganador)) {
-                        if (ganador.some(g => g.toLowerCase() === votoUsuario.toLowerCase())) aciertos++;
-                    } else {
-                        if (votoUsuario.toLowerCase() === ganador.toLowerCase()) aciertos++;
+                    if (coincideEmpate) {
+                        aciertos++;
                     }
-                });
-
-                participantes.push({ nombre, aciertos });
+                } else {
+                    // Comparación normal para el resto de categorías
+                    if (votoUsuario.toLowerCase() === ganador.toLowerCase() || 
+                        votoUsuario.toLowerCase().includes(ganador.toLowerCase()) ||
+                        ganador.toLowerCase().includes(votoUsuario.toLowerCase())) {
+                        aciertos++;
+                    }
+                }
             });
 
-            // Ordenar por puntaje
-            participantes.sort((a, b) => b.aciertos - a.aciertos);
+            participantes.push({ nombre, aciertos });
+        });
 
-            const body = document.getElementById('body-resultados');
-            body.innerHTML = "";
-            
-            participantes.forEach((p, index) => {
-                const esGanador = index === 0 ? "pos-1" : "";
-                body.innerHTML += `
-                    <tr class="${esGanador}">
-                        <td>${index + 1}°</td>
-                        <td>${p.nombre}</td>
-                        <td class="puntos">${p.aciertos}</td>
-                    </tr>`;
-            });
+        // Ordenar y mostrar tabla
+        participantes.sort((a, b) => b.aciertos - a.aciertos);
+        const body = document.getElementById('body-resultados');
+        body.innerHTML = "";
+        
+        participantes.forEach((p, index) => {
+            const esGanador = index === 0 ? "pos-1" : "";
+            body.innerHTML += `
+                <tr class="${esGanador}">
+                    <td>${index + 1}°</td>
+                    <td>${p.nombre}</td>
+                    <td class="puntos">${p.aciertos}</td>
+                </tr>`;
+        });
 
-            document.getElementById('loading').style.display = "none";
-            document.getElementById('tabla-resultados').style.display = "table";
+        document.getElementById('loading').style.display = "none";
+        document.getElementById('tabla-resultados').style.display = "table";
 
-        } catch (error) {
-            console.error(error);
-            document.getElementById('loading').innerText = "Error: Verifica la publicación del Excel.";
-        }
+    } catch (error) {
+        document.getElementById('loading').innerText = "Error al cargar los datos.";
     }
+}
 
     procesarResultados();
 </script>
