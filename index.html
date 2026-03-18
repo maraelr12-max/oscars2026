@@ -70,42 +70,81 @@
         "The Girl Who Cried Pearls"           // Corto Animado
     ];
 
-async function procesarResultados() {
+<script>
+    // 1. VERIFICA QUE ESTA URL TERMINE EN output=csv
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhTN5cI2dGymnpFhGpvuPCwdDavJkJEG4u44ox5qKddNjIOHUYm2VioQILnudoQey1jK3Iu6RNXucX/pub?output=csv";
+
+    // 2. GANADORES (Ajustados exactamente a lo que se ve en tu foto del Excel)
+    const ganadoresOficiales = [
+        "One Battle After Another",           // Mejor Película
+        "Jessie Buckley - Hamnet",            // Mejor Actriz
+        "Michael B. Jordan - Sinners",        // Mejor Actor
+        "Amy Madigan - Weapons",              // Mejor Actriz Reparto
+        "Sean Penn - One Battle After Another", // Mejor Actor Reparto
+        "Paul Thomas Anderson - One Battle After Another", // Mejor Dirección
+        "Sinners",                            // Guion Original
+        "One Battle After Another",           // Guion Adaptado
+        "Golden - KPop Demon Hunters",        // Canción
+        "Sinners",                            // Banda Sonora
+        "Sentimental Value (Noruega)",        // Película Internacional
+        "KPop Demon Hunters",                 // Animación
+        "Mr. Nobody Against Putin",           // Documental
+        "Frankenstein",                       // Diseño Producción
+        "Frankenstein",                       // Maquillaje
+        "Frankenstein",                       // Vestuario
+        "F1",                                 // Sonido
+        "One Battle After Another",           // Edición
+        "Sinners",                            // Fotografía
+        "Avatar: Fire and Ash",               // Efectos Visuales
+        ["The Singers", "Two People Exchanging Saliva"], // Corto Ficción (Empate)
+        "All the Empty Rooms",                // Corto Doc
+        "One Battle After Another",           // Casting
+        "The Girl Who Cried Pearls"           // Corto Animado
+    ];
+
+    async function procesarResultados() {
         try {
-            const response = await fetch(CSV_URL + "?cb=" + Date.now());
-            const data = await response.text();
+            const response = await fetch(CSV_URL + "&cb=" + Date.now());
+            const csvText = await response.text();
             
-            // Usamos una expresión regular para separar correctamente las comas de CSV
-            const filas = data.split(/\r?\n/).slice(1); 
+            // Dividimos por filas y limpiamos espacios vacíos al final
+            const filas = csvText.split(/\r?\n/).filter(f => f.trim() !== "").slice(1);
             
             let participantes = [];
 
             filas.forEach(fila => {
-                // Esta función ayuda a que las comas dentro de los nombres no rompan la tabla
-                const columnas = fila.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-                if (!columnas || columnas.length < 3) return;
+                // Esta expresión regular separa por comas respetando las que están dentro de comillas
+                const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                
+                if (columnas.length < 3) return;
 
-                const nombre = columnas[1].replace(/"/g, "").trim();
+                // Limpiamos comillas y espacios de cada celda
+                const limpiar = (texto) => texto ? texto.replace(/^["']|["']$/g, '').trim() : "";
+                
+                const nombre = limpiar(columnas[1]);
                 let aciertos = 0;
 
                 ganadoresOficiales.forEach((ganador, i) => {
-                    if (!columnas[i + 2]) return;
-                    const votoUsuario = columnas[i + 2].replace(/"/g, "").trim();
+                    const votoUsuario = limpiar(columnas[i + 2]);
                     
                     if (Array.isArray(ganador)) {
-                        if (ganador.includes(votoUsuario)) aciertos++;
+                        // Caso de empate (Corto Ficción)
+                        if (ganador.some(g => g.toLowerCase() === votoUsuario.toLowerCase())) aciertos++;
                     } else {
-                        if (votoUsuario === ganador) aciertos++;
+                        // Comparación normal (sin importar mayúsculas/minúsculas)
+                        if (votoUsuario.toLowerCase() === ganador.toLowerCase()) aciertos++;
                     }
                 });
 
                 participantes.push({ nombre, aciertos });
             });
 
+            // Ordenamos: primero por aciertos, luego por nombre
             participantes.sort((a, b) => b.aciertos - a.aciertos);
 
             const body = document.getElementById('body-resultados');
             body.innerHTML = "";
+            
             participantes.forEach((p, index) => {
                 const esGanador = index === 0 ? "pos-1" : "";
                 body.innerHTML += `
@@ -120,7 +159,8 @@ async function procesarResultados() {
             document.getElementById('tabla-resultados').style.display = "table";
 
         } catch (error) {
-            document.getElementById('loading').innerText = "Error al conectar con el Excel.";
+            console.error(error);
+            document.getElementById('loading').innerText = "Error: Verifica que el Excel esté publicado como CSV.";
         }
     }
 
