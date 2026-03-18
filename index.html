@@ -11,44 +11,155 @@
         h1 { color: var(--gold); letter-spacing: 3px; text-transform: uppercase; font-size: 1.8rem; }
         .loading { color: var(--gold); font-style: italic; margin-top: 20px; }
 
+        /* Diseño del Podio */
         .podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 10px; margin-top: 50px; height: 280px; }
         .podestal { background: rgba(0,0,0,0.5); border: 1px solid #555; border-top-left-radius: 15px; border-top-right-radius: 15px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; width: 30%; padding-top: 20px; box-shadow: 0 -10px 20px rgba(0,0,0,0.5); transition: transform 0.3s; }
+        .podestal:hover { transform: translateY(-10px); }
         
-        .p1 { height: 100%; border-color: var(--gold); background: rgba(212,175,55,0.15); order: 2; }
-        .p2 { height: 75%; border-color: var(--silver); background: rgba(192,192,192,0.1); order: 1; }
-        .p3 { height: 60%; border-color: var(--bronze); background: rgba(205,127,50,0.1); order: 3; }
+        .p1 { height: 100%; border-color: var(--gold); background: rgba(212,175,55,0.15); order: 2; z-index: 3;}
+        .p2 { height: 75%; border-color: var(--silver); background: rgba(192,192,192,0.1); order: 1; z-index: 2;}
+        .p3 { height: 60%; border-color: var(--bronze); background: rgba(205,127,50,0.1); order: 3; z-index: 1;}
 
         .medal { font-size: 3rem; margin-bottom: 10px; }
-        .podium-name { font-weight: bold; font-size: 1.2rem; margin-bottom: 8px; text-transform: uppercase; }
+        .podium-name { font-weight: bold; font-size: 1.2rem; margin-bottom: 8px; text-transform: uppercase; word-break: break-word; padding: 0 5px;}
         .podium-score { font-size: 1.5rem; font-weight: bold; }
+        
         .p1 .podium-score { color: var(--gold); }
+        .p2 .podium-score { color: var(--silver); }
+        .p3 .podium-score { color: var(--bronze); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>🏆 Los Mejores de la Noche</h1>
-    <p style="color: #999;">Resultados Finales</p>
-    <div id="loading" class="loading">Cargando la alfombra roja...</div>
+    <p style="color: #999;">Resultados Oficiales de la Quiniela</p>
+    
+    <div id="loading" class="loading">Contando los últimos votos...</div>
+    
     <div id="podium" class="podium-container" style="display:none;"></div>
 </div>
 
 <script>
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhTN5cI2dGymnpFhGpvuPCwdDavJkJEG4u44ox5qKddNjIOHUYm2VioQILnudoQey1jK3Iu6RNXucX/pub?output=csv";
 
+    // Textos intactos
     const ganadoresOficiales = [
-        "One Battle After Another", "Jessie Buckley - Hamnet", "Michael B. Jordan - Sinners",
-        "Amy Madigan - Weapons", "Sean Penn - One Battle After Another", "Paul Thomas Anderson - One Battle After Another",
-        "Sinners", "One Battle After Another", "Golden - KPop Demon Hunters", "Sinners",
-        "Sentimental Value (Noruega)", "KPop Demon Hunters", "Mr. Nobody Against Putin",
-        "Frankenstein", "Frankenstein", "Frankenstein", "F1", "One Battle After Another",
-        "Sinners", "Avatar: Fire and Ash", ["The Singers", "Two People Exchanging Saliva"],
-        "All the Empty Rooms", "One Battle After Another", "The Girl Who Cried Pearls"
+        "One Battle After Another",                           
+        "Jessie Buckley - Hamnet",                            
+        "Michael B. Jordan - Sinners",                        
+        "Amy Madigan - Weapons",                              
+        "Sean Penn - One Battle After Another",               
+        "Paul Thomas Anderson - One Battle After Another",    
+        "Sinners",                                            
+        "One Battle After Another",                           
+        "Golden - KPop Demon Hunters",                        
+        "Sinners",                                            
+        "Sentimental Value (Noruega)",                        
+        "KPop Demon Hunters",                                 
+        "Mr. Nobody Against Putin",                           
+        "Frankenstein",                                       
+        "Frankenstein",                                       
+        "Frankenstein",                                       
+        "F1",                                                 
+        "One Battle After Another",                           
+        "Sinners",                                            
+        "Avatar: Fire and Ash",                               
+        ["The Singers", "Two People Exchanging Saliva"],      // Empate configurado
+        "All the Empty Rooms",                                
+        "One Battle After Another",                           
+        "The Girl Who Cried Pearls"                           
     ];
 
+    // LA FUNCIÓN "NUCLEAR" QUE EVITA QUE SE PIERDAN PUNTOS
     function esAcierto(voto, ganador) {
         if (!voto || !ganador) return false;
-        const limpiar = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
-        let v = limpiar(voto);
+        
+        // Quita mayúsculas, acentos, espacios, guiones y puntos
+        const modoExtremo = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+        
+        let vLimpiado = modoExtremo(voto);
+        
         if (Array.isArray(ganador)) {
-            return ganador.some(g => v.includes(limpiar(g)) || limpiar
+            // Si es el empate, verifica si la respuesta de la persona coincide con alguna de las dos opciones
+            return ganador.some(g => {
+                let gLimpiado = modoExtremo(g);
+                return vLimpiado.includes(gLimpiado) || gLimpiado.includes(vLimpiado);
+            });
+        } else {
+            // Para todas las demás
+            let gLimpiado = modoExtremo(ganador);
+            return vLimpiado.includes(gLimpiado) || gLimpiado.includes(vLimpiado);
+        }
+    }
+
+    async function procesarResultados() {
+        try {
+            const response = await fetch(CSV_URL + "&cb=" + Date.now());
+            const data = await response.text();
+            
+            // Divide las filas y descarta las vacías
+            const filas = data.split(/\r?\n/).filter(f => f.trim() !== "").slice(1);
+            
+            let participantes = [];
+
+            filas.forEach(fila => {
+                // Separador avanzado para que las comas del CSV no rompan el Excel
+                const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                if (columnas.length < 5) return;
+
+                const nombre = columnas[1].replace(/^["']|["']$/g, '').trim();
+                let aciertos = 0;
+
+                ganadoresOficiales.forEach((ganador, i) => {
+                    let votoCrudo = columnas[i + 2];
+                    if (votoCrudo) {
+                        votoCrudo = votoCrudo.replace(/^["']|["']$/g, '').trim();
+                        if (esAcierto(votoCrudo, ganador)) {
+                            aciertos++;
+                        }
+                    }
+                });
+
+                participantes.push({ nombre, aciertos });
+            });
+
+            // Ordena de mayor a menor
+            participantes.sort((a, b) => b.aciertos - a.aciertos);
+            
+            // Corta solo a los 3 primeros lugares
+            const top3 = participantes.slice(0, 3);
+
+            // Dibuja el Podio
+            const podiumDiv = document.getElementById('podium');
+            podiumDiv.innerHTML = `
+                <div class="podestal p2">
+                    <div class="medal">🥈</div>
+                    <div class="podium-name">${top3[1] ? top3[1].nombre : '---'}</div>
+                    <div class="podium-score">${top3[1] ? top3[1].aciertos : 0}</div>
+                </div>
+                <div class="podestal p1">
+                    <div class="medal">👑</div>
+                    <div class="podium-name">${top3[0] ? top3[0].nombre : '---'}</div>
+                    <div class="podium-score">${top3[0] ? top3[0].aciertos : 0}</div>
+                </div>
+                <div class="podestal p3">
+                    <div class="medal">🥉</div>
+                    <div class="podium-name">${top3[2] ? top3[2].nombre : '---'}</div>
+                    <div class="podium-score">${top3[2] ? top3[2].aciertos : 0}</div>
+                </div>
+            `;
+
+            document.getElementById('loading').style.display = "none";
+            podiumDiv.style.display = "flex";
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById('loading').innerText = "Error cargando los resultados.";
+        }
+    }
+
+    procesarResultados();
+</script>
+</body>
+</html>
