@@ -3,113 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modo Diagnóstico</title>
+    <title>Resultados Oscars 🏆</title>
     <style>
-        body { background: #111; color: white; font-family: sans-serif; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #222;}
-        th, td { border: 1px solid #444; padding: 10px; text-align: left; }
-        th { background: #333; color: gold; text-transform: uppercase; }
-        .yes { color: #0f0; font-weight: bold; }
-        .no { color: #f55; }
+        :root { --gold: #D4AF37; --silver: #C0C0C0; --bronze: #CD7F32; --dark: #0a0a0a; --glass: rgba(255,255,255,0.05); }
+        body { background: var(--dark); color: white; font-family: 'Georgia', serif; padding: 20px; text-align: center; }
+        .container { max-width: 800px; margin: 0 auto; background: var(--glass); padding: 30px; border-radius: 20px; border: 1px solid var(--gold); }
+        h1 { color: var(--gold); letter-spacing: 3px; text-transform: uppercase; font-size: 1.8rem; }
+        .loading { color: var(--gold); font-style: italic; margin-top: 20px; }
+
+        .podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 10px; margin-top: 50px; height: 280px; }
+        .podestal { background: rgba(0,0,0,0.5); border: 1px solid #555; border-top-left-radius: 15px; border-top-right-radius: 15px; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; width: 30%; padding-top: 20px; box-shadow: 0 -10px 20px rgba(0,0,0,0.5); transition: transform 0.3s; }
+        
+        .p1 { height: 100%; border-color: var(--gold); background: rgba(212,175,55,0.15); order: 2; }
+        .p2 { height: 75%; border-color: var(--silver); background: rgba(192,192,192,0.1); order: 1; }
+        .p3 { height: 60%; border-color: var(--bronze); background: rgba(205,127,50,0.1); order: 3; }
+
+        .medal { font-size: 3rem; margin-bottom: 10px; }
+        .podium-name { font-weight: bold; font-size: 1.2rem; margin-bottom: 8px; text-transform: uppercase; }
+        .podium-score { font-size: 1.5rem; font-weight: bold; }
+        .p1 .podium-score { color: var(--gold); }
     </style>
 </head>
 <body>
-    <h2 style="color: gold;">🔍 Escáner de Votos - Oscars 2026</h2>
-    <p>Revisa la tabla de la persona ganadora. Busca la categoría donde debería tener punto pero sale una "❌".</p>
-    <div id="debug-area" style="color: #888; font-style: italic;">Cargando datos del Excel...</div>
 
-    <script>
-        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhTN5cI2dGymnpFhGpvuPCwdDavJkJEG4u44ox5qKddNjIOHUYm2VioQILnudoQey1jK3Iu6RNXucX/pub?output=csv";
+<div class="container">
+    <h1>🏆 Los Mejores de la Noche</h1>
+    <p style="color: #999;">Resultados Finales - Familia</p>
+    <div id="loading" class="loading">Cargando la alfombra roja...</div>
+    <div id="podium" class="podium-container" style="display:none;"></div>
+</div>
 
-        const ganadoresOficiales = [
-            "One Battle After Another",                           
-            "Jessie Buckley - Hamnet",                            
-            "Michael B. Jordan - Sinners",                        
-            "Amy Madigan - Weapons",                              
-            "Sean Penn - One Battle After Another",               
-            "Paul Thomas Anderson - One Battle After Another",    
-            "Sinners",                                            
-            "One Battle After Another",                           
-            "Golden - KPop Demon Hunters",                        
-            "Sinners",                                            
-            "Sentimental Value (Noruega)",                        
-            "KPop Demon Hunters",                                 
-            "Mr. Nobody Against Putin",                           
-            "Frankenstein",                                       
-            "Frankenstein",                                       
-            "Frankenstein",                                       
-            "F1",                                                 
-            "One Battle After Another",                           
-            "Sinners",                                            
-            "Avatar: Fire and Ash",                               
-            ["The Singers", "Two People Exchanging Saliva"],
-            "All the Empty Rooms",                                
-            "One Battle After Another",                           
-            "The Girl Who Cried Pearls"                           
-        ];
+<script>
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhTN5cI2dGymnpFhGpvuPCwdDavJkJEG4u44ox5qKddNjIOHUYm2VioQILnudoQey1jK3Iu6RNXucX/pub?output=csv";
 
-        const categorias = [
-            "1. Película", "2. Actriz", "3. Actor", "4. Actriz Reparto", "5. Actor Reparto", "6. Dirección", 
-            "7. Guion Orig", "8. Guion Adapt", "9. Canción", "10. Banda Sonora", "11. Internacional", "12. Animación", 
-            "13. Documental", "14. Diseño Prod", "15. Maquillaje", "16. Vestuario", "17. Sonido", "18. Edición", "19. Fotografía", 
-            "20. Efectos", "21. Corto Ficción", "22. Corto Doc", "23. Casting", "24. Corto Animado"
-        ];
+    const ganadoresOficiales = [
+        "One Battle After Another", "Jessie Buckley - Hamnet", "Michael B. Jordan - Sinners",
+        "Amy Madigan - Weapons", "Sean Penn - One Battle After Another", "Paul Thomas Anderson - One Battle After Another",
+        "Sinners", "One Battle After Another", "Golden - KPop Demon Hunters", "Sinners",
+        "Sentimental Value (Noruega)", "KPop Demon Hunters", "Mr. Nobody Against Putin",
+        "Frankenstein", "Frankenstein", "Frankenstein", "F1", "One Battle After Another",
+        "Sinners", "Avatar: Fire and Ash", ["The Singers", "Two People Exchanging Saliva"],
+        "All the Empty Rooms", "One Battle After Another", "The Girl Who Cried Pearls"
+    ];
 
-        function esAcierto(voto, ganador) {
-            if (!voto || !ganador) return false;
-            const modoExtremo = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
-            let vLimpiado = modoExtremo(voto);
-            if (!vLimpiado) return false;
-
-            if (Array.isArray(ganador)) {
-                return ganador.some(g => {
-                    let gLimpiado = modoExtremo(g);
-                    return vLimpiado.includes(gLimpiado) || gLimpiado.includes(vLimpiado);
-                });
-            } else {
-                let gLimpiado = modoExtremo(ganador);
-                return vLimpiado.includes(gLimpiado) || gLimpiado.includes(vLimpiado);
-            }
-        }
-
-        async function checar() {
-            try {
-                const res = await fetch(CSV_URL + "&cb=" + Date.now());
-                const txt = await res.text();
-                const filas = txt.split(/\r?\n/).filter(f => f.trim() !== "").slice(1);
-                
-                let html = "";
-
-                filas.forEach(fila => {
-                    const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                    if(columnas.length < 5) return;
-
-                    let nombre = columnas[1].replace(/^["']|["']$/g, '').trim();
-                    let aciertos = 0;
-                    let tablaFilas = "";
-
-                    ganadoresOficiales.forEach((gan, idx) => {
-                        let voto = columnas[idx + 2] ? columnas[idx + 2].replace(/^["']|["']$/g, '').trim() : "(En blanco)";
-                        let punto = esAcierto(voto, gan);
-                        if(punto) aciertos++;
-
-                        let ganStr = Array.isArray(gan) ? gan.join(" -O- ") : gan;
-                        let icono = punto ? "<span class='yes'>✅ SÍ</span>" : "<span class='no'>❌ NO</span>";
-
-                        tablaFilas += `<tr><td>${categorias[idx]}</td><td>${ganStr}</td><td>${voto}</td><td>${icono}</td></tr>`;
-                    });
-
-                    html += `<h3 style="color: gold; margin-top:50px; border-bottom: 2px solid gold;">👤 ${nombre} - Puntos Totales: ${aciertos}</h3>`;
-                    html += `<table><tr><th>Categoría</th><th>Lo que busca el sistema</th><th>Lo que está en el Excel</th><th>¿Sumó Punto?</th></tr>${tablaFilas}</table>`;
-                });
-
-                document.getElementById('debug-area').innerHTML = html;
-
-            } catch(e) {
-                document.getElementById('debug-area').innerText = "Error leyendo el CSV.";
-            }
-        }
-        checar();
-    </script>
-</body>
-</html>
+    function esAcierto(voto, ganador) {
+        if (!voto || !ganador) return false;
+        const limpiar = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+        let v = limpiar(voto);
+        if (Array.isArray(ganador)) {
+            return ganador.some(g => v.includes(limpiar(g)) || limpiar
