@@ -5,139 +5,176 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resultados Oscars 🏆</title>
     <style>
-        :root { --gold: #D4AF37; --dark: #0a0a0a; --glass: rgba(255,255,255,0.05); }
+        :root { --gold: #D4AF37; --silver: #C0C0C0; --bronze: #CD7F32; --dark: #0a0a0a; --glass: rgba(255,255,255,0.05); }
         body { background: var(--dark); color: white; font-family: 'Georgia', serif; padding: 20px; text-align: center; }
-        .container { max-width: 600px; margin: 0 auto; background: var(--glass); padding: 30px; border-radius: 20px; border: 1px solid var(--gold); }
-        h1 { color: var(--gold); letter-spacing: 3px; text-transform: uppercase; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 1.2rem; }
-        th { border-bottom: 2px solid var(--gold); padding: 15px; color: var(--gold); text-transform: uppercase; }
-        td { padding: 15px; border-bottom: 1px solid #333; }
-        .pos-1 { color: var(--gold); font-weight: bold; font-size: 1.5rem; }
-        .puntos { font-weight: bold; color: #fff; }
-        .loading { color: var(--gold); font-style: italic; }
+        .container { max-width: 800px; margin: 0 auto; background: var(--glass); padding: 30px; border-radius: 20px; border: 1px solid var(--gold); }
+        h1 { color: var(--gold); letter-spacing: 3px; text-transform: uppercase; font-size: 1.8rem; }
+        .loading { color: var(--gold); font-style: italic; margin-top: 20px; }
+
+        /* Diseño del Podio */
+        .podium-container { 
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-end; 
+            gap: 10px; 
+            margin-top: 50px; 
+            height: 280px; 
+        }
+        .podestal { 
+            background: rgba(0,0,0,0.5); 
+            border: 1px solid #555; 
+            border-top-left-radius: 15px; 
+            border-top-right-radius: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: flex-start; 
+            align-items: center; 
+            width: 30%; 
+            padding-top: 20px;
+            box-shadow: 0 -10px 20px rgba(0,0,0,0.5);
+            transition: transform 0.3s;
+        }
+        .podestal:hover { transform: translateY(-10px); }
+        
+        /* Alturas y colores según el lugar */
+        .p1 { height: 100%; border-color: var(--gold); background: rgba(212,175,55,0.15); order: 2; z-index: 3;}
+        .p2 { height: 75%; border-color: var(--silver); background: rgba(192,192,192,0.1); order: 1; z-index: 2;}
+        .p3 { height: 60%; border-color: var(--bronze); background: rgba(205,127,50,0.1); order: 3; z-index: 1;}
+
+        .medal { font-size: 3rem; margin-bottom: 10px; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .podium-name { font-weight: bold; font-size: 1.2rem; margin-bottom: 8px; text-transform: uppercase; word-break: break-word; padding: 0 5px;}
+        .podium-score { font-size: 1.5rem; font-weight: bold; }
+        
+        .p1 .podium-score { color: var(--gold); }
+        .p2 .podium-score { color: var(--silver); }
+        .p3 .podium-score { color: var(--bronze); }
+        
+        .mensaje-felicitacion { margin-top: 40px; font-size: 1.2rem; color: #ccc; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🏆 Tabla de Posiciones Final</h1>
-    <p style="color: #999;">Resultados Oficiales</p>
+    <h1>🏆 Los Mejores de la Noche</h1>
+    <p style="color: #999;">Resultados Oficiales de la Quiniela</p>
     
-    <div id="loading" class="loading">Calculando votos...</div>
+    <div id="loading" class="loading">Desplegando la alfombra roja...</div>
     
-    <table id="tabla-resultados" style="display:none;">
-        <thead>
-            <tr>
-                <th>Lugar</th>
-                <th>Nombre</th>
-                <th>Aciertos</th>
-            </tr>
-        </thead>
-        <tbody id="body-resultados"></tbody>
-    </table>
+    <div id="podium" class="podium-container" style="display:none;">
+        </div>
+    
+    <div id="mensaje" class="mensaje-felicitacion" style="display:none;"></div>
 </div>
 
 <script>
-    // 1. URL DE TU EXCEL (Verifica que termine en output=csv)
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhTN5cI2dGymnpFhGpvuPCwdDavJkJEG4u44ox5qKddNjIOHUYm2VioQILnudoQey1jK3Iu6RNXucX/pub?output=csv";
 
-    // 2. GANADORES (Ajustados exactamente a tu Excel)
+    // Mantenemos exactamente 24 elementos para no romper las columnas del Excel
     const ganadoresOficiales = [
-        "One Battle After Another",           // Mejor Película
-        "Jessie Buckley - Hamnet",            // Mejor Actriz
-        "Michael B. Jordan - Sinners",        // Mejor Actor
-        "Amy Madigan - Weapons",              // Mejor Actriz Reparto
-        "Sean Penn - One Battle After Another", // Mejor Actor Reparto
-        "Paul Thomas Anderson - One Battle After Another", // Mejor Dirección
-        "Sinners",                            // Guion Original
-        "One Battle After Another",           // Guion Adaptado
-        "Golden - KPop Demon Hunters",        // Canción
-        "Sinners",                            // Banda Sonora
-        "Sentimental Value (Noruega)",        // Película Internacional
-        "KPop Demon Hunters",                 // Animación
-        "Mr. Nobody Against Putin",           // Documental
-        "Frankenstein",                       // Diseño Producción
-        "Frankenstein",                       // Maquillaje
-        "Frankenstein",                       // Vestuario
-        "F1",                                 // Sonido
-        "One Battle After Another",           // Edición
-        "Sinners",                            // Fotografía
-        "Avatar: Fire and Ash",               // Efectos Visuales
-        ["The Singers", "Two People Exchanging Saliva"], // Corto Ficción (Empate)
-        "All the Empty Rooms",                // Corto Doc
-        "One Battle After Another",           // Casting
-        "The Girl Who Cried Pearls"           // Corto Animado
+        "One Battle After Another",           // 0
+        "Jessie Buckley",                     // 1 (Simplificado para mejor búsqueda)
+        "Michael B. Jordan",                  // 2 (Simplificado)
+        "Amy Madigan",                        // 3
+        "Sean Penn",                          // 4
+        "Paul Thomas Anderson",               // 5
+        "Sinners",                            // 6
+        "One Battle After Another",           // 7
+        "Golden",                             // 8
+        "Sinners",                            // 9
+        "Sentimental Value",                  // 10
+        "KPop Demon Hunters",                 // 11
+        "Mr. Nobody Against Putin",           // 12
+        "Frankenstein",                       // 13
+        "Frankenstein",                       // 14
+        "Frankenstein",                       // 15
+        "F1",                                 // 16
+        "One Battle After Another",           // 17
+        "Sinners",                            // 18
+        "Avatar: Fire and Ash",               // 19
+        "EMPATE_INTERNO",                     // 20: Corto Ficción (Se calcula abajo)
+        "All the Empty Rooms",                // 21
+        "One Battle After Another",           // 22
+        "The Girl Who Cried Pearls"           // 23
     ];
 
-async function procesarResultados() {
-    try {
-        const response = await fetch(CSV_URL + "&cb=" + Date.now());
-        const csvText = await response.text();
-        
-        // Dividimos por filas y limpiamos
-        const filas = csvText.split(/\r?\n/).filter(f => f.trim() !== "").slice(1);
-        
-        let participantes = [];
+    async function procesarResultados() {
+        try {
+            const response = await fetch(CSV_URL + "&cb=" + Date.now());
+            const csvText = await response.text();
+            const filas = csvText.split(/\r?\n/).filter(f => f.trim() !== "").slice(1);
+            
+            let participantes = [];
 
-        filas.forEach(fila => {
-            // Separador robusto para CSV
-            const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            if (columnas.length < 5) return;
+            filas.forEach(fila => {
+                const columnas = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                if (columnas.length < 5) return;
 
-            const limpiar = (texto) => texto ? texto.replace(/^["']|["']$/g, '').trim() : "";
-            const nombre = limpiar(columnas[1]);
-            let aciertos = 0;
+                const limpiar = (texto) => texto ? texto.replace(/^["']|["']$/g, '').trim().toLowerCase() : "";
+                const nombre = columnas[1].replace(/^["']|["']$/g, '').trim();
+                let aciertos = 0;
 
-            ganadoresOficiales.forEach((ganador, i) => {
-                const votoUsuario = limpiar(columnas[i + 2]);
-                if (!votoUsuario) return;
-
-                // Lógica especial para el EMPATE (donde el ganador es una lista/array)
-                if (Array.isArray(ganador)) {
-                    // Si el voto del usuario coincide con CUALQUIERA de los ganadores de la lista
-                    const coincideEmpate = ganador.some(g => 
-                        votoUsuario.toLowerCase().includes(g.toLowerCase()) || 
-                        g.toLowerCase().includes(votoUsuario.toLowerCase())
-                    );
+                ganadoresOficiales.forEach((ganador, i) => {
+                    const votoUsuario = limpiar(columnas[i + 2]);
+                    if (!votoUsuario) return;
                     
-                    if (coincideEmpate) {
-                        aciertos++;
+                    const ganadorLimpio = ganador.toLowerCase();
+
+                    // Lógica especial para el empate en el índice 20
+                    if (i === 20) {
+                        if (votoUsuario.includes("The singers") || votoUsuario.includes("Two People Exchanging Saliva")) {
+                            aciertos++;
+                        }
+                    } else {
+                        // Para el resto, si el voto contiene el nombre del ganador, suma el punto
+                        if (votoUsuario.includes(ganadorLimpio) || ganadorLimpio.includes(votoUsuario)) {
+                            aciertos++;
+                        }
                     }
-                } else {
-                    // Comparación normal para el resto de categorías
-                    if (votoUsuario.toLowerCase() === ganador.toLowerCase() || 
-                        votoUsuario.toLowerCase().includes(ganador.toLowerCase()) ||
-                        ganador.toLowerCase().includes(votoUsuario.toLowerCase())) {
-                        aciertos++;
-                    }
-                }
+                });
+
+                participantes.push({ nombre, aciertos });
             });
 
-            participantes.push({ nombre, aciertos });
-        });
+            // Ordenar de mayor a menor
+            participantes.sort((a, b) => b.aciertos - a.aciertos);
 
-        // Ordenar y mostrar tabla
-        participantes.sort((a, b) => b.aciertos - a.aciertos);
-        const body = document.getElementById('body-resultados');
-        body.innerHTML = "";
-        
-        participantes.forEach((p, index) => {
-            const esGanador = index === 0 ? "pos-1" : "";
-            body.innerHTML += `
-                <tr class="${esGanador}">
-                    <td>${index + 1}°</td>
-                    <td>${p.nombre}</td>
-                    <td class="puntos">${p.aciertos}</td>
-                </tr>`;
-        });
+            // Seleccionar solo los 3 primeros lugares
+            const top3 = participantes.slice(0, 3);
 
-        document.getElementById('loading').style.display = "none";
-        document.getElementById('tabla-resultados').style.display = "table";
+            // Dibujar el Podio
+            const podiumDiv = document.getElementById('podium');
+            podiumDiv.innerHTML = `
+                <div class="podestal p2">
+                    <div class="medal">🥈</div>
+                    <div class="podium-name">${top3[1] ? top3[1].nombre : '---'}</div>
+                    <div class="podium-score">${top3[1] ? top3[1].aciertos : 0} pts</div>
+                </div>
+                <div class="podestal p1">
+                    <div class="medal">👑</div>
+                    <div class="podium-name">${top3[0] ? top3[0].nombre : '---'}</div>
+                    <div class="podium-score">${top3[0] ? top3[0].aciertos : 0} pts</div>
+                </div>
+                <div class="podestal p3">
+                    <div class="medal">🥉</div>
+                    <div class="podium-name">${top3[2] ? top3[2].nombre : '---'}</div>
+                    <div class="podium-score">${top3[2] ? top3[2].aciertos : 0} pts</div>
+                </div>
+            `;
 
-    } catch (error) {
-        document.getElementById('loading').innerText = "Error al cargar los datos.";
+            document.getElementById('loading').style.display = "none";
+            podiumDiv.style.display = "flex";
+            
+            if(top3[0]) {
+                const msj = document.getElementById('mensaje');
+                msj.innerHTML = `¡Felicidades a <strong>${top3[0].nombre}</strong> por llevarse la estatuilla de este año!`;
+                msj.style.display = "block";
+            }
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById('loading').innerText = "Error: Verifica la conexión al Excel.";
+        }
     }
-}
 
     procesarResultados();
 </script>
