@@ -70,25 +70,28 @@
         "The Girl Who Cried Pearls"           // Corto Animado
     ];
 
-    async function procesarResultados() {
+async function procesarResultados() {
         try {
             const response = await fetch(CSV_URL + "?cb=" + Date.now());
             const data = await response.text();
-            const filas = data.split('\n').slice(1);
+            
+            // Usamos una expresión regular para separar correctamente las comas de CSV
+            const filas = data.split(/\r?\n/).slice(1); 
             
             let participantes = [];
 
             filas.forEach(fila => {
-                const columnas = fila.split(',');
-                if (columnas.length < 5) return;
+                // Esta función ayuda a que las comas dentro de los nombres no rompan la tabla
+                const columnas = fila.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                if (!columnas || columnas.length < 3) return;
 
-                const nombre = columnas[1].trim();
+                const nombre = columnas[1].replace(/"/g, "").trim();
                 let aciertos = 0;
 
                 ganadoresOficiales.forEach((ganador, i) => {
-                    const votoUsuario = columnas[i + 2] ? columnas[i + 2].trim() : "";
+                    if (!columnas[i + 2]) return;
+                    const votoUsuario = columnas[i + 2].replace(/"/g, "").trim();
                     
-                    // Lógica para manejar el empate en Corto Ficción o aciertos normales
                     if (Array.isArray(ganador)) {
                         if (ganador.includes(votoUsuario)) aciertos++;
                     } else {
@@ -117,8 +120,7 @@
             document.getElementById('tabla-resultados').style.display = "table";
 
         } catch (error) {
-            console.error(error);
-            document.getElementById('loading').innerText = "Error al cargar datos.";
+            document.getElementById('loading').innerText = "Error al conectar con el Excel.";
         }
     }
 
